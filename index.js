@@ -1,26 +1,121 @@
+require("dotenv").config();
 const express = require("express");
-const cors = require("cors");
 const app = express();
-const port = 5000;
-app.use(cors());
+const port = process.env.PORT || 5000;
+const cors = require("cors");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
-const chefData = require("./data/chef.json");
+app.use(cors());
+app.use(express.json());
+
+const uri =
+  "mongodb+srv://eshansaif1234:kyUAn8yYKL1jWxFJ@cluster0.c9ympil.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+
+const client = new MongoClient(uri, {
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  },
+});
+
+async function run() {
+  try {
+    await client.connect();
+
+    const recipeDB = client.db("recipeDB");
+    const recipeCollection = recipeDB.collection("recipeCollection");
+    const categories = recipeDB.collection("categories");
+    const usersCollection = recipeDB.collection("usersCollection");
+
+    app.get("/", (req, res) => {
+      res.send("Welcome to the server");
+    });
+
+    // users
+    app.post("/user", async (req, res) => {
+      try {
+        const userData = req.body;
+        const result = await usersCollection.insertOne(userData);
+        res.send({
+          code: 200,
+          message: "User created successfully",
+          data: result,
+        });
+      } catch (error) {
+        console.log(error.message);
+      }
+    });
+
+    // login
+
+    // Recipes
+    app.post("/recipes", async (req, res) => {
+      try {
+        const recipeData = req.body;
+        const result = await recipeCollection.insertOne(recipeData);
+        res.send(result);
+      } catch (error) {
+        console.log(error.message);
+      }
+    });
+
+    app.get("/recipes", async (req, res) => {
+      try {
+        const data = recipeCollection.find();
+        const result = await data.toArray();
+        res.send(result);
+      } catch (error) {
+        console.log(error.message);
+      }
+    });
+
+    // view details
+
+    app.get("/recipes/:id", async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      try {
+        const result = await recipeCollection.findOne({
+          _id: new ObjectId(id),
+        });
+        res.send(result);
+      } catch (error) {
+        console.error("Error finding recipe:", error);
+        res
+          .status(500)
+          .json({ error: "An error occurred while fetching the recipe" });
+      }
+    });
+
+    // Categories;
+    app.get("/categories", async (req, res) => {
+      try {
+        const data = categories.find();
+        const result = await data.toArray();
+        res.send(result);
+      } catch (error) {
+        console.log(error.message);
+      }
+    });
+
+    await client.db("admin").command({ ping: 1 });
+    console.log(
+      "Pinged your deployment. You successfully connected to MongoDB!"
+    );
+  } finally {
+    // Ensures that the client will close when you finish/error
+    // await client.close();
+  }
+}
+run().catch(console.dir);
 
 app.get("/", (req, res) => {
-  res.send("Baburchi King is running");
-});
-
-app.get("/chefs", (req, res) => {
-  res.send(chefData);
-});
-
-app.get("/chefs/:id", (req, res) => {
-  const id = req.params.id;
-  console.log(id);
-  const individualChef = chefData.chefs.filter((chef) => chef.id == id);
-  res.send(individualChef);
+  res.send("Welcome to the server");
 });
 
 app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
+  console.log(`Server is listening at ${port}`);
 });
+
+// kyUAn8yYKL1jWxFJ
