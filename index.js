@@ -1,12 +1,34 @@
 require("dotenv").config();
 const express = require("express");
 const app = express();
+const jwt = require("jsonwebtoken");
 const port = process.env.PORT || 5000;
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 app.use(cors());
 app.use(express.json());
+
+function createToken(user) {
+  const token = jwt.sign(
+    {
+      email: user.email,
+    },
+    "secret",
+    { expiresIn: "7d" }
+  );
+  return token;
+}
+
+function verifyToken(req, res, next) {
+  const token = req.headers.authorization.split(" ")[1];
+  const verify = jwt.verify(token, "secret");
+  if (!verify?.email) {
+    return res.send("You are not authorized");
+  }
+  req.user = verify.email;
+  next();
+}
 
 const uri =
   "mongodb+srv://eshansaif1234:kyUAn8yYKL1jWxFJ@cluster0.c9ympil.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
@@ -36,6 +58,12 @@ async function run() {
     app.post("/user", async (req, res) => {
       try {
         const userData = req.body;
+        console.log(userData);
+        const isUserExist = await usersCollection.findOne({
+          email: userData?.email,
+        });
+        console.log(isUserExist);
+        return;
         const result = await usersCollection.insertOne(userData);
         res.send({
           code: 200,
