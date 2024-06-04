@@ -54,29 +54,43 @@ async function run() {
       res.send("Welcome to the server");
     });
 
-    // users
+    // user
+    // User routes
     app.post("/user", async (req, res) => {
-      try {
-        const userData = req.body;
-        console.log(userData);
-        const isUserExist = await usersCollection.findOne({
-          email: userData?.email,
+      const user = req.body;
+      const isUserExist = await usersCollection.findOne({ email: user?.email });
+      if (isUserExist?._id) {
+        return res.send({
+          status: "success",
+          message: "Login success",
         });
-        console.log(isUserExist);
-        return;
-        const result = await usersCollection.insertOne(userData);
-        res.send({
-          code: 200,
-          message: "User created successfully",
-          data: result,
-        });
-      } catch (error) {
-        console.log(error.message);
       }
+      const result = await usersCollection.insertOne(user);
+      return res.send(result);
     });
 
-    // login
+    app.get("/user/get/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await usersCollection.findOne({ _id: new ObjectId(id) });
+      res.send(result);
+    });
 
+    app.get("/user/:email", async (req, res) => {
+      const email = req.params.email;
+      const result = await usersCollection.findOne({ email });
+      res.send(result);
+    });
+
+    app.patch("/user/:email", async (req, res) => {
+      const email = req.params.email;
+      const userData = req.body;
+      const result = await usersCollection.updateOne(
+        { email },
+        { $set: userData },
+        { upsert: true }
+      );
+      res.send(result);
+    });
     // Recipes
     app.post("/recipes", async (req, res) => {
       try {
@@ -116,6 +130,23 @@ async function run() {
       }
     });
 
+    app.patch("/recipes/:id", async (req, res) => {
+      const id = req.params.id;
+      const updatedData = req.body;
+      const result = await recipeCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: updatedData }
+      );
+      res.send(result);
+    });
+    app.delete("/recipes/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await recipeCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
+      res.send(result);
+    });
+
     // Categories;
     app.get("/categories", async (req, res) => {
       try {
@@ -124,6 +155,34 @@ async function run() {
         res.send(result);
       } catch (error) {
         console.log(error.message);
+      }
+    });
+
+    // get all chefs
+    app.get("/users/chefs", async (req, res) => {
+      try {
+        const chefs = await usersCollection.find({ role: "chef" }).toArray();
+        res.json(chefs);
+      } catch (error) {
+        console.error("Error fetching chefs:", error);
+        res
+          .status(500)
+          .json({ error: "An error occurred while fetching chefs" });
+      }
+    });
+    // Recipe by chef
+
+    app.get("/recipes/chef/:email", async (req, res) => {
+      try {
+        const { email } = req.params;
+        console.log(email);
+        const recipes = await recipeCollection.find({ email: email }).toArray();
+        res.json(recipes);
+      } catch (error) {
+        console.error("Error fetching recipes by chef:", error);
+        res
+          .status(500)
+          .json({ error: "An error occurred while fetching recipes" });
       }
     });
 
@@ -145,5 +204,3 @@ app.get("/", (req, res) => {
 app.listen(port, () => {
   console.log(`Server is listening at ${port}`);
 });
-
-// kyUAn8yYKL1jWxFJ
