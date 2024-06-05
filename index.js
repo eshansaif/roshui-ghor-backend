@@ -17,26 +17,23 @@
 //   return token;
 // }
 
-// // function verifyToken(req, res, next) {
-// //   try {
-// //     const authHeader = req.headers.authorization;
-// //     if (!authHeader)
-// //       return res.status(401).send("Authorization header missing");
-
-// //     const token = authHeader.split(" ")[1];
-// //     if (!token) return res.status(401).send("Token missing");
-
-// //     const verify = jwt.verify(token, process.env.JWT_SECRET);
-// //     if (!verify?.email)
-// //       return res.status(401).send("Token verification failed");
-
-// //     req.user = verify.email;
-// //     next();
-// //   } catch (error) {
-// //     console.error("Token verification error:", error);
-// //     res.status(401).send("You are not authorized");
-// //   }
-// // }
+//  function verifyToken(req, res, next) {
+//    try {
+//      const authHeader = req.headers.authorization;
+//      if (!authHeader)
+//        return res.status(401).send("Authorization header missing");
+//     const token = authHeader.split(" ")[1];
+//      if (!token) return res.status(401).send("Token missing");
+//      const verify = jwt.verify(token, process.env.JWT_SECRET);
+//      if (!verify?.email)
+//        return res.status(401).send("Token verification failed");
+//      req.user = verify.email;
+//      next();
+//    } catch (error) {
+//      console.error("Token verification error:", error);
+//      res.status(401).send("You are not authorized");
+//    }
+//  }
 
 // const uri =
 //   "mongodb+srv://eshansaif1234:kyUAn8yYKL1jWxFJ@cluster0.c9ympil.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
@@ -259,6 +256,31 @@ const port = process.env.PORT || 5000;
 app.use(cors({ origin: ["http://localhost:5173"] }));
 app.use(express.json());
 
+function createToken(user) {
+  const token = jwt.sign({ email: user.email }, "thisissecretekey", {
+    expiresIn: "7d",
+  });
+  return token;
+}
+
+function verifyToken(req, res, next) {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader)
+      return res.status(401).send("Authorization header missing");
+    const token = authHeader.split(" ")[1];
+    if (!token) return res.status(401).send("Token missing");
+    const verify = jwt.verify(token, process.env.JWT_SECRET);
+    if (!verify?.email)
+      return res.status(401).send("Token verification failed");
+    req.user = verify.email;
+    next();
+  } catch (error) {
+    console.error("Token verification error:", error);
+    res.status(401).send("You are not authorized");
+  }
+}
+
 const uri = process.env.DB_URL;
 
 const client = new MongoClient(uri, {
@@ -305,7 +327,8 @@ app.get("/", (req, res) => {
 // Users
 app.post("/user", async (req, res) => {
   const user = req.body;
-  // const token = createToken(user);
+  const token = createToken(user);
+  // console.log(token);
   const isUserExist = await usersCollection.findOne({ email: user?.email });
   if (isUserExist?._id) {
     return res.send({ status: "success", message: "Login success", token });
@@ -316,8 +339,8 @@ app.post("/user", async (req, res) => {
 
 app.get("/user/get/:id", async (req, res) => {
   const id = req.params.id;
-  const result = await usersCollection.findOne({ _id: new ObjectId(id) });
-  return res.send(result);
+  await usersCollection.findOne({ _id: new ObjectId(id) });
+  return res.send({ token });
 });
 
 app.get("/user/:email", async (req, res) => {
@@ -375,7 +398,7 @@ app.get("/recipes/:id", async (req, res) => {
   }
 });
 
-app.patch("/recipes/:id", async (req, res) => {
+app.patch("/recipes/:id", verifyToken, async (req, res) => {
   const id = req.params.id;
   const updatedData = req.body;
   const result = await recipeCollection.updateOne(
