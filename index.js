@@ -288,6 +288,7 @@ app.get("/", (req, res) => {
   res.send("Welcome to the server");
 });
 
+// Users
 app.post("/user", async (req, res) => {
   const user = req.body;
   const token = createToken(user);
@@ -302,13 +303,13 @@ app.post("/user", async (req, res) => {
 app.get("/user/get/:id", async (req, res) => {
   const id = req.params.id;
   const result = await usersCollection.findOne({ _id: new ObjectId(id) });
-  res.send(result);
+  return res.send(result);
 });
 
 app.get("/user/:email", async (req, res) => {
   const email = req.params.email;
   const result = await usersCollection.findOne({ email });
-  res.send(result);
+  return res.send(result);
 });
 
 app.patch("/user/:email", async (req, res) => {
@@ -319,7 +320,7 @@ app.patch("/user/:email", async (req, res) => {
     { $set: userData },
     { upsert: true }
   );
-  res.send(result);
+  return res.send(result);
 });
 
 app.post("/recipes", async (req, res) => {
@@ -327,10 +328,10 @@ app.post("/recipes", async (req, res) => {
     const recipeData = req.body;
     console.log("Adding recipe:", recipeData);
     const result = await recipeCollection.insertOne(recipeData);
-    res.send(result);
+    return res.send(result);
   } catch (error) {
     console.error("Error adding recipe:", error);
-    res.status(500).send("An error occurred while adding the recipe");
+    return res.status(500).send("An error occurred while adding the recipe");
   }
 });
 
@@ -338,7 +339,7 @@ app.get("/recipes", async (req, res) => {
   try {
     const data = recipeCollection.find();
     const result = await data.toArray();
-    res.send(result);
+    return res.send(result);
   } catch (error) {
     console.log(error.message);
   }
@@ -351,7 +352,7 @@ app.get("/recipes/:id", async (req, res) => {
     const result = await recipeCollection.findOne({
       _id: new ObjectId(id),
     });
-    res.send(result);
+    return res.send(result);
   } catch (error) {
     console.error("Error finding recipe:", error);
     res
@@ -367,7 +368,7 @@ app.patch("/recipes/:id", async (req, res) => {
     { _id: new ObjectId(id) },
     { $set: updatedData }
   );
-  res.send(result);
+  return res.send(result);
 });
 
 app.delete("/recipes/:id", async (req, res) => {
@@ -375,14 +376,14 @@ app.delete("/recipes/:id", async (req, res) => {
   const result = await recipeCollection.deleteOne({
     _id: new ObjectId(id),
   });
-  res.send(result);
+  return res.send(result);
 });
 
 app.get("/categories", async (req, res) => {
   try {
     const data = categories.find();
     const result = await data.toArray();
-    res.send(result);
+    return res.send(result);
   } catch (error) {
     console.log(error.message);
   }
@@ -391,7 +392,7 @@ app.get("/categories", async (req, res) => {
 app.get("/users/chefs", async (req, res) => {
   try {
     const chefs = await usersCollection.find({ role: "chef" }).toArray();
-    res.json(chefs);
+    return res.send(chefs);
   } catch (error) {
     console.error("Error fetching chefs:", error);
     res.status(500).json({ error: "An error occurred while fetching chefs" });
@@ -403,10 +404,12 @@ app.get("/recipes/chef/:email", async (req, res) => {
     const { email } = req.params;
     console.log(email);
     const recipes = await recipeCollection.find({ email: email }).toArray();
-    res.json(recipes);
+    return res.json(recipes);
   } catch (error) {
     console.error("Error fetching recipes by chef:", error);
-    res.status(500).json({ error: "An error occurred while fetching recipes" });
+    return res
+      .status(500)
+      .json({ error: "An error occurred while fetching recipes" });
   }
 });
 
@@ -437,7 +440,7 @@ app.get("/stats", async (req, res) => {
       ])
       .toArray();
 
-    res.json({
+    return res.json({
       totalUsers,
       totalChefs,
       totalRecipes,
