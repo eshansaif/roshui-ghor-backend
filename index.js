@@ -247,8 +247,8 @@
 
 // ----------------------------------------------------------
 
-require("dotenv").config();
 const express = require("express");
+require("dotenv").config();
 const app = express();
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
@@ -272,17 +272,31 @@ const client = new MongoClient(uri, {
 let recipeCollection, categories, usersCollection;
 
 // Connect to MongoDB
-client
-  .connect()
-  .then(() => {
-    const recipeDB = client.db("recipeDB");
-    recipeCollection = recipeDB.collection("recipeCollection");
-    categories = recipeDB.collection("categories");
-    usersCollection = recipeDB.collection("usersCollection");
+// client
+//   .connect()
+//   .then(() => {
+//     const recipeDB = client.db("recipeDB");
+//     recipeCollection = recipeDB.collection("recipeCollection");
+//     categories = recipeDB.collection("categories");
+//     usersCollection = recipeDB.collection("usersCollection");
 
-    console.log("Successfully connected to MongoDB");
-  })
-  .catch((err) => console.error("MongoDB connection error:", err));
+//     console.log("Successfully connected to MongoDB");
+//   })
+//   .catch((err) => console.error("MongoDB connection error:", err));
+
+const dbConnect = async () => {
+  try {
+    client.connect();
+    console.log("Database Connected Successfully✅");
+  } catch (error) {
+    console.log(error.name, error.message);
+  }
+};
+dbConnect();
+
+usersCollection = client.db("recipeDB").collection("usersCollection");
+categories = client.db("recipeDB").collection("categories");
+recipeCollection = client.db("recipeDB").collection("recipeCollection");
 
 app.get("/", (req, res) => {
   res.send("Welcome to the server");
