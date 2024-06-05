@@ -215,6 +215,52 @@ async function run() {
       }
     });
 
+    // Stats
+
+    app.get("/stats", async (req, res) => {
+      try {
+        const totalUsers = await usersCollection.countDocuments();
+        const totalChefs = await usersCollection.countDocuments({
+          role: "chef",
+        });
+        const totalRecipes = await recipeCollection.countDocuments();
+        const totalCategories = await categories.countDocuments();
+
+        const categoryWiseRecipes = await categories
+          .aggregate([
+            {
+              $lookup: {
+                from: "recipeCollection",
+                localField: "title",
+                foreignField: "category",
+                as: "recipes",
+              },
+            },
+            {
+              $project: {
+                _id: 0,
+                category: "$title",
+                recipeCount: { $size: "$recipes" },
+              },
+            },
+          ])
+          .toArray();
+
+        res.json({
+          totalUsers,
+          totalChefs,
+          totalRecipes,
+          totalCategories,
+          categoryWiseRecipes,
+        });
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+        res
+          .status(500)
+          .json({ error: "An error occurred while fetching stats" });
+      }
+    });
+
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
