@@ -17,26 +17,26 @@ function createToken(user) {
   return token;
 }
 
-function verifyToken(req, res, next) {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader)
-      return res.status(401).send("Authorization header missing");
+// function verifyToken(req, res, next) {
+//   try {
+//     const authHeader = req.headers.authorization;
+//     if (!authHeader)
+//       return res.status(401).send("Authorization header missing");
 
-    const token = authHeader.split(" ")[1];
-    if (!token) return res.status(401).send("Token missing");
+//     const token = authHeader.split(" ")[1];
+//     if (!token) return res.status(401).send("Token missing");
 
-    const verify = jwt.verify(token, process.env.JWT_SECRET);
-    if (!verify?.email)
-      return res.status(401).send("Token verification failed");
+//     const verify = jwt.verify(token, process.env.JWT_SECRET);
+//     if (!verify?.email)
+//       return res.status(401).send("Token verification failed");
 
-    req.user = verify.email;
-    next();
-  } catch (error) {
-    console.error("Token verification error:", error);
-    res.status(401).send("You are not authorized");
-  }
-}
+//     req.user = verify.email;
+//     next();
+//   } catch (error) {
+//     console.error("Token verification error:", error);
+//     res.status(401).send("You are not authorized");
+//   }
+// }
 
 const uri = process.env.DB_URL;
 
