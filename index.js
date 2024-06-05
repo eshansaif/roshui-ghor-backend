@@ -256,7 +256,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 const port = process.env.PORT || 5000;
 
-app.use(cors());
+app.use(cors({ origin: ["http://localhost:5173"] }));
 app.use(express.json());
 
 const uri = process.env.DB_URL;
@@ -305,13 +305,13 @@ app.get("/", (req, res) => {
 // Users
 app.post("/user", async (req, res) => {
   const user = req.body;
-  const token = createToken(user);
+  // const token = createToken(user);
   const isUserExist = await usersCollection.findOne({ email: user?.email });
   if (isUserExist?._id) {
     return res.send({ status: "success", message: "Login success", token });
   }
-  await usersCollection.insertOne(user);
-  return res.send({ token });
+  const result = await usersCollection.insertOne(user);
+  return res.send({ result });
 });
 
 app.get("/user/get/:id", async (req, res) => {
