@@ -21,13 +21,28 @@ function createToken(user) {
 }
 
 function verifyToken(req, res, next) {
-  const token = req.headers.authorization.split(" ")[1];
-  const verify = jwt.verify(token, "secret");
-  if (!verify?.email) {
-    return res.send("You are not authorized");
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).send("Authorization header missing");
+    }
+
+    const token = authHeader.split(" ")[1];
+    if (!token) {
+      return res.status(401).send("Token missing");
+    }
+
+    const verify = jwt.verify(token, "secret");
+    if (!verify?.email) {
+      return res.status(401).send("Token verification failed");
+    }
+
+    req.user = verify.email;
+    next();
+  } catch (error) {
+    console.error("Token verification error:", error);
+    res.status(401).send("You are not authorized");
   }
-  req.user = verify.email;
-  next();
 }
 
 const uri =
@@ -58,15 +73,17 @@ async function run() {
     // User routes
     app.post("/user", async (req, res) => {
       const user = req.body;
+      const token = createToken(user);
       const isUserExist = await usersCollection.findOne({ email: user?.email });
       if (isUserExist?._id) {
         return res.send({
           status: "success",
           message: "Login success",
+          token,
         });
       }
-      const result = await usersCollection.insertOne(user);
-      return res.send(result);
+      await usersCollection.insertOne(user);
+      return res.send({ token });
     });
 
     app.get("/user/get/:id", async (req, res) => {
@@ -92,13 +109,25 @@ async function run() {
       res.send(result);
     });
     // Recipes
+    // app.post("/recipes", verifyToken, async (req, res) => {
+    //   try {
+    //     const recipeData = req.body;
+    //     const result = await recipeCollection.insertOne(recipeData);
+    //     res.send(result);
+    //   } catch (error) {
+    //     console.log(error.message);
+    //   }
+    // });
+
     app.post("/recipes", async (req, res) => {
       try {
         const recipeData = req.body;
+        console.log("Adding recipe:", recipeData);
         const result = await recipeCollection.insertOne(recipeData);
         res.send(result);
       } catch (error) {
-        console.log(error.message);
+        console.error("Error adding recipe:", error);
+        res.status(500).send("An error occurred while adding the recipe");
       }
     });
 
