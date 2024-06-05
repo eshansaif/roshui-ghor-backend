@@ -2,33 +2,40 @@ require("dotenv").config();
 const express = require("express");
 const app = express();
 const jwt = require("jsonwebtoken");
+const port = process.env.PORT || 5000;
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
-
-const port = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
 
 function createToken(user) {
-  const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, {
-    expiresIn: "7d",
-  });
+  const token = jwt.sign(
+    {
+      email: user.email,
+    },
+    "secret",
+    { expiresIn: "7d" }
+  );
   return token;
 }
 
 function verifyToken(req, res, next) {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader)
+    if (!authHeader) {
       return res.status(401).send("Authorization header missing");
+    }
 
     const token = authHeader.split(" ")[1];
-    if (!token) return res.status(401).send("Token missing");
+    if (!token) {
+      return res.status(401).send("Token missing");
+    }
 
-    const verify = jwt.verify(token, process.env.JWT_SECRET);
-    if (!verify?.email)
+    const verify = jwt.verify(token, "secret");
+    if (!verify?.email) {
       return res.status(401).send("Token verification failed");
+    }
 
     req.user = verify.email;
     next();
@@ -38,7 +45,8 @@ function verifyToken(req, res, next) {
   }
 }
 
-const uri = process.env.MONGODB_URI;
+const uri =
+  "mongodb+srv://eshansaif1234:kyUAn8yYKL1jWxFJ@cluster0.c9ympil.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -51,6 +59,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     await client.connect();
+
     const recipeDB = client.db("recipeDB");
     const recipeCollection = recipeDB.collection("recipeCollection");
     const categories = recipeDB.collection("categories");
@@ -60,12 +69,18 @@ async function run() {
       res.send("Welcome to the server");
     });
 
+    // user
+    // User routes
     app.post("/user", async (req, res) => {
       const user = req.body;
       const token = createToken(user);
       const isUserExist = await usersCollection.findOne({ email: user?.email });
       if (isUserExist?._id) {
-        return res.send({ status: "success", message: "Login success", token });
+        return res.send({
+          status: "success",
+          message: "Login success",
+          token,
+        });
       }
       await usersCollection.insertOne(user);
       return res.send({ token });
@@ -116,6 +131,8 @@ async function run() {
       }
     });
 
+    // view details
+
     app.get("/recipes/:id", async (req, res) => {
       const id = req.params.id;
       console.log(id);
@@ -141,7 +158,6 @@ async function run() {
       );
       res.send(result);
     });
-
     app.delete("/recipes/:id", async (req, res) => {
       const id = req.params.id;
       const result = await recipeCollection.deleteOne({
@@ -150,6 +166,7 @@ async function run() {
       res.send(result);
     });
 
+    // Categories;
     app.get("/categories", async (req, res) => {
       try {
         const data = categories.find();
@@ -160,6 +177,7 @@ async function run() {
       }
     });
 
+    // get all chefs
     app.get("/users/chefs", async (req, res) => {
       try {
         const chefs = await usersCollection.find({ role: "chef" }).toArray();
@@ -171,6 +189,7 @@ async function run() {
           .json({ error: "An error occurred while fetching chefs" });
       }
     });
+    // Recipe by chef
 
     app.get("/recipes/chef/:email", async (req, res) => {
       try {
@@ -185,6 +204,8 @@ async function run() {
           .json({ error: "An error occurred while fetching recipes" });
       }
     });
+
+    // Stats
 
     app.get("/stats", async (req, res) => {
       try {
@@ -234,11 +255,16 @@ async function run() {
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
-  } catch (error) {
-    console.error("MongoDB connection error:", error);
+  } finally {
+    // Ensures that the client will close when you finish/error
+    // await client.close();
   }
 }
 run().catch(console.dir);
+
+app.get("/", (req, res) => {
+  res.send("Welcome to the server");
+});
 
 app.listen(port, () => {
   console.log(`Server is listening at ${port}`);
