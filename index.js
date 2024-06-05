@@ -38,12 +38,10 @@ function createToken(user) {
 //   }
 // }
 
-const uri = process.env.DB_URL;
+const uri =
+  "mongodb+srv://eshansaif1234:kyUAn8yYKL1jWxFJ@cluster0.c9ympil.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 
 const client = new MongoClient(uri, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  tls: true,
   serverApi: {
     version: ServerApiVersion.v1,
     strict: true,
