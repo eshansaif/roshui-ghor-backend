@@ -108,16 +108,6 @@ async function run() {
       );
       res.send(result);
     });
-    // Recipes
-    // app.post("/recipes", verifyToken, async (req, res) => {
-    //   try {
-    //     const recipeData = req.body;
-    //     const result = await recipeCollection.insertOne(recipeData);
-    //     res.send(result);
-    //   } catch (error) {
-    //     console.log(error.message);
-    //   }
-    // });
 
     app.post("/recipes", async (req, res) => {
       try {
