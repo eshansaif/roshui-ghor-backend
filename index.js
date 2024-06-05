@@ -257,28 +257,20 @@ app.use(cors({ origin: ["http://localhost:5173"] }));
 app.use(express.json());
 
 function createToken(user) {
-  const token = jwt.sign({ email: user.email }, "thisissecretekey", {
+  const token = jwt.sign({ email: user.email }, "secret", {
     expiresIn: "7d",
   });
   return token;
 }
 
 function verifyToken(req, res, next) {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader)
-      return res.status(401).send("Authorization header missing");
-    const token = authHeader.split(" ")[1];
-    if (!token) return res.status(401).send("Token missing");
-    const verify = jwt.verify(token, process.env.JWT_SECRET);
-    if (!verify?.email)
-      return res.status(401).send("Token verification failed");
-    req.user = verify.email;
-    next();
-  } catch (error) {
-    console.error("Token verification error:", error);
-    res.status(401).send("You are not authorized");
+  const token = req.headers.authorization.split(" ")[1];
+  const verify = jwt.verify(token, "secret");
+  if (!verify?.email) {
+    return res.send("You are not authorized");
   }
+  req.user = verify.email;
+  next();
 }
 
 const uri = process.env.DB_URL;
